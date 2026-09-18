@@ -1,0 +1,41 @@
+@use './variables' as v;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100svh;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: v.$color-cream;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+// Comfortable tap targets on touch devices
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+@media (max-width: v.$breakpoint-mobile) {
+  html {
+    font-size: 15px;
+  }
+}
