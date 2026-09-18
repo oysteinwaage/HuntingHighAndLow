@@ -1,4 +1,4 @@
-export const MIN_HUNTING_YEAR = 2025
+export const MIN_HUNTING_YEAR = 2026
 
 export function getCurrentHuntingYear() {
   return new Date().getFullYear()
