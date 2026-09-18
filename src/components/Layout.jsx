@@ -21,6 +21,7 @@ import {
 } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
 import hunterIcon from '../assets/hunter-icon.png'
+import { IosInstallBanner } from './IosInstallBanner'
 import classes from './Layout.module.scss'
 
 const NAV_ITEMS = [
@@ -102,6 +103,8 @@ export function Layout() {
       <AppShell.Main className={classes.main}>
         <Outlet />
       </AppShell.Main>
+
+      <IosInstallBanner />
     </AppShell>
   )
 }
