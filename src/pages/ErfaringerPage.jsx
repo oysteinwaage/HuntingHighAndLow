@@ -81,7 +81,7 @@ function YearDropdown({ value, onChange }) {
 }
 
 export function ErfaringerPage() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const { entriesByYear, loading, error, addEntry, removeEntry } = useExperiences()
 
   return (
@@ -130,7 +130,7 @@ export function ErfaringerPage() {
                           </Text>
                         </Stack>
                       </Group>
-                      {entry.authorUid === user?.uid && (
+                      {(entry.authorUid === user?.uid || isAdmin) && (
                         <ActionIcon
                           variant="subtle"
                           color="red"

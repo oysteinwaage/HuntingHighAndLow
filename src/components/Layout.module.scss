@@ -15,6 +15,12 @@
   margin-bottom: 4px;
 }
 
+.navFooter {
+  flex-shrink: 0;
+  padding-top: 8px;
+  border-top: 1px solid #e5e4e7;
+}
+
 .main {
   max-width: 960px;
   margin: 0 auto;

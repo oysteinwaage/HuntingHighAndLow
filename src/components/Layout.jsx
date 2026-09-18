@@ -95,7 +95,7 @@ export function Layout() {
       </AppShell.Header>
 
       <AppShell.Navbar className={classes.navbar} p="sm">
-        <ScrollArea>
+        <ScrollArea style={{ flex: 1 }}>
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
@@ -115,7 +115,9 @@ export function Layout() {
               color="forest"
             />
           ))}
+        </ScrollArea>
 
+        <div className={classes.navFooter}>
           {isAdmin && (
             <NavLink
               component={RouterNavLink}
@@ -148,7 +150,7 @@ export function Layout() {
             variant="filled"
             color="forest"
           />
-        </ScrollArea>
+        </div>
       </AppShell.Navbar>
 
       <AppShell.Main className={classes.main}>
