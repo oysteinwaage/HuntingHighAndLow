@@ -7,7 +7,8 @@ forberedelser før jakta.
 
 - **React + Vite** – frontend
 - **SASS** – styling (i tillegg til [Mantine](https://mantine.dev/) som komponentbibliotek)
-- **Firebase Authentication** (Google-innlogging) + **Firebase Realtime Database**
+- **Firebase Authentication** (Google-innlogging) + **Firebase Realtime Database** + **Firebase Storage**
+  (jaktbilder)
 - **Vercel** – hosting/deploy
 
 ## Komme i gang lokalt
@@ -47,6 +48,10 @@ forberedelser før jakta.
    `.env` som `VITE_FIREBASE_DATABASE_URL`.
 4. Under Realtime Database → **Rules**, lim inn innholdet fra [`database.rules.json`](database.rules.json)
    i dette repoet (krever innlogging for lesing/skriving, og gjør pakkelister private per bruker).
+5. **Storage** → opprett en Storage-bucket. Kopier bucket-navnet inn i `.env` som
+   `VITE_FIREBASE_STORAGE_BUCKET` (trengs for jaktbilder-siden).
+6. Under Storage → **Rules**, lim inn innholdet fra [`storage.rules`](storage.rules) i dette repoet
+   (krever innlogging, og tillater kun bildefiler under 10 MB).
 
 ## Datastruktur (Realtime Database)
 
@@ -59,8 +64,12 @@ packingTemplate/items/{id}         Standard pakkeliste (mal)
 packingLists/{uid}/items/{id}      Personlig pakkeliste per bruker
 prepTemplate/items/{id}            Standard forberedelses-sjekkliste (mal)
 prepLists/{year}/items/{id}        Årets forberedelser
+teamPhotos/{year}                  Lagbilde for året (URL til Firebase Storage m.m.)
 feedback/{id}                      Tilbakemeldinger fra brukere (kun lesbart for ADMIN)
 ```
+
+Selve bildefilene ligger i **Firebase Storage** under `teamPhotos/{year}/lagbilde`, og komprimeres
+(nedskalert + JPEG) i nettleseren før opplasting for å holde lagringsbruken lav.
 
 Handleliste, pakkeliste og forberedelser kan importeres fra sin respektive standardliste
 ("mal"), og alle innloggede kan legge til nye ting og hake av det som er gjort/kjøpt.

@@ -1,5 +1,5 @@
-const SEASON_OPEN_MONTH = 8 // September (0-indexed)
-const SEASON_OPEN_DAY = 10
+export const SEASON_OPEN_MONTH = 8 // September (0-indexed)
+export const SEASON_OPEN_DAY = 10
 const FRIDAY = 5
 
 // Default hunt is Thursday–Sunday around the first Friday+Saturday that both

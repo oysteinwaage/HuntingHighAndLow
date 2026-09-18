@@ -8,6 +8,10 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
+    "teamPhotos": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "shoppingLists": {
       ".read": "auth != null",
       ".write": "auth != null"

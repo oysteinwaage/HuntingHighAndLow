@@ -22,6 +22,7 @@ import {
   IconLogout,
   IconMessage2,
   IconNotebook,
+  IconPhoto,
   IconShoppingCart,
 } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { to: '/handleliste', label: 'Handleliste', icon: IconShoppingCart },
   { to: '/pakkeliste', label: 'Pakkeliste', icon: IconBackpack },
   { to: '/forberedelser', label: 'Forberedelser', icon: IconChecklist },
+  { to: '/jaktbilder', label: 'Jaktbilder', icon: IconPhoto },
 ]
 
 export function Layout() {
