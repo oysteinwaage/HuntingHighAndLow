@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { NavLink as RouterNavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   AppShell,
   Avatar,
+  Badge,
   Burger,
   Group,
+  Indicator,
   NavLink,
   ScrollArea,
   Text,
@@ -15,12 +18,16 @@ import {
   IconBackpack,
   IconChecklist,
   IconHome,
+  IconInbox,
   IconLogout,
+  IconMessage2,
   IconNotebook,
   IconShoppingCart,
 } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useFeedbackList } from '../hooks/useFeedback'
 import hunterIcon from '../assets/hunter-icon.png'
+import { FeedbackDialog } from './FeedbackDialog'
 import { IosInstallBanner } from './IosInstallBanner'
 import classes from './Layout.module.scss'
 
@@ -34,7 +41,9 @@ const NAV_ITEMS = [
 
 export function Layout() {
   const [opened, { toggle, close }] = useDisclosure(false)
-  const { user, signOut } = useAuth()
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const { user, isAdmin, signOut } = useAuth()
+  const { unreadCount } = useFeedbackList(isAdmin)
   const location = useLocation()
 
   return (
@@ -46,7 +55,16 @@ export function Layout() {
       <AppShell.Header className={classes.header}>
         <Group h="100%" px="md" justify="space-between">
           <Group gap="sm">
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Indicator
+              label={unreadCount}
+              color="red"
+              size={16}
+              offset={4}
+              disabled={!isAdmin || unreadCount === 0}
+              hiddenFrom="sm"
+            >
+              <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            </Indicator>
             <Text fw={700} size="lg" c="forest.7">
               Hunting High &amp; Low
             </Text>
@@ -97,6 +115,39 @@ export function Layout() {
               color="forest"
             />
           ))}
+
+          {isAdmin && (
+            <NavLink
+              component={RouterNavLink}
+              to="/tilbakemeldinger"
+              label="Tilbakemeldinger"
+              leftSection={<IconInbox size={18} stroke={1.75} />}
+              rightSection={
+                unreadCount > 0 ? (
+                  <Badge color="red" size="sm" circle>
+                    {unreadCount}
+                  </Badge>
+                ) : null
+              }
+              active={location.pathname.startsWith('/tilbakemeldinger')}
+              onClick={close}
+              className={classes.navLink}
+              variant="filled"
+              color="forest"
+            />
+          )}
+
+          <NavLink
+            label="Send tilbakemelding"
+            leftSection={<IconMessage2 size={18} stroke={1.75} />}
+            onClick={() => {
+              setFeedbackOpen(true)
+              close()
+            }}
+            className={classes.navLink}
+            variant="filled"
+            color="forest"
+          />
         </ScrollArea>
       </AppShell.Navbar>
 
@@ -105,6 +156,7 @@ export function Layout() {
       </AppShell.Main>
 
       <IosInstallBanner />
+      <FeedbackDialog opened={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </AppShell>
   )
 }

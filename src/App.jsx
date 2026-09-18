@@ -7,6 +7,7 @@ import { ErfaringerPage } from './pages/ErfaringerPage'
 import { HandlelistePage } from './pages/HandlelistePage'
 import { PakkelistePage } from './pages/PakkelistePage'
 import { ForberedelserPage } from './pages/ForberedelserPage'
+import { TilbakemeldingerPage } from './pages/TilbakemeldingerPage'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/handleliste" element={<HandlelistePage />} />
         <Route path="/pakkeliste" element={<PakkelistePage />} />
         <Route path="/forberedelser" element={<ForberedelserPage />} />
+        <Route path="/tilbakemeldinger" element={<TilbakemeldingerPage />} />
       </Route>
     </Routes>
   )

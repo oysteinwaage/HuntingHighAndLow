@@ -59,6 +59,7 @@ packingTemplate/items/{id}         Standard pakkeliste (mal)
 packingLists/{uid}/items/{id}      Personlig pakkeliste per bruker
 prepTemplate/items/{id}            Standard forberedelses-sjekkliste (mal)
 prepLists/{year}/items/{id}        Årets forberedelser
+feedback/{id}                      Tilbakemeldinger fra brukere (kun lesbart for ADMIN)
 ```
 
 Handleliste, pakkeliste og forberedelser kan importeres fra sin respektive standardliste

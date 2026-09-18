@@ -1,11 +1,49 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
+    "experiences": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "huntDates": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "shoppingLists": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "shoppingTemplate": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "prepLists": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "prepTemplate": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "packingTemplate": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "packingLists": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "feedback": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('roles').child('0').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('1').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('2').val() === 'ADMIN')",
+      "$feedbackId": {
+        ".write": "auth != null && (!data.exists() || root.child('users').child(auth.uid).child('roles').child('0').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('1').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('2').val() === 'ADMIN')"
       }
     }
   }
