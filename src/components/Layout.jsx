@@ -46,7 +46,7 @@ export function Layout() {
           <Group gap="sm">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Text fw={700} size="lg" c="forest.7">
-              🦌 Hunting High &amp; Low
+              🐦 Hunting High &amp; Low
             </Text>
           </Group>
           {user && (

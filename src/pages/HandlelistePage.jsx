@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { Group, Stack, Text, Title } from '@mantine/core'
 import { Checklist } from '../components/Checklist'
 import { YearSelector } from '../components/YearSelector'
-import { getCurrentHuntingYear } from '../utils/year'
+import { clampHuntingYear, getCurrentHuntingYear } from '../utils/year'
 import { DEFAULT_SHOPPING_ITEMS } from '../data/defaultShoppingItems'
 
 export function HandlelistePage() {
-  const [year, setYear] = useState(getCurrentHuntingYear())
+  const [year, setYear] = useState(clampHuntingYear(getCurrentHuntingYear()))
 
   return (
     <Stack gap="lg" mt="md">

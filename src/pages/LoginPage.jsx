@@ -27,7 +27,7 @@ export function LoginPage() {
     <Center h="100svh" p="md">
       <Paper withBorder shadow="md" radius="lg" p="xl" w={380} maw="100%">
         <Stack align="center" gap="md">
-          <Text size="48px">🦌</Text>
+          <Text size="48px">🐦</Text>
           <Title order={2} ta="center">
             Hunting High &amp; Low
           </Title>

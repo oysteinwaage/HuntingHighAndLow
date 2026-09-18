@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   Group,
+  NativeSelect,
   Paper,
   SegmentedControl,
   Stack,
@@ -14,12 +15,12 @@ import {
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useExperiences } from '../hooks/useExperiences'
-import { getCurrentHuntingYear } from '../utils/year'
+import { clampHuntingYear, getCurrentHuntingYear, getYearOptions } from '../utils/year'
 
 function NewEntryForm({ onSubmit }) {
   const [text, setText] = useState('')
   const [type, setType] = useState('bra')
-  const [year, setYear] = useState(String(getCurrentHuntingYear()))
+  const [year, setYear] = useState(String(clampHuntingYear(getCurrentHuntingYear())))
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -41,7 +42,7 @@ function NewEntryForm({ onSubmit }) {
               { label: 'Dårlig', value: 'darlig' },
             ]}
           />
-          <TinyYearInput value={year} onChange={setYear} />
+          <YearDropdown value={year} onChange={setYear} />
         </Group>
         <Textarea
           value={text}
@@ -60,23 +61,20 @@ function NewEntryForm({ onSubmit }) {
   )
 }
 
-function TinyYearInput({ value, onChange }) {
+function YearDropdown({ value, onChange }) {
+  const options = getYearOptions().map((y) => String(y))
+
   return (
     <Group gap={6} align="center">
       <Text size="sm" c="dimmed">
         For år:
       </Text>
-      <input
-        type="number"
+      <NativeSelect
         value={value}
-        onChange={(event) => onChange(event.target.value)}
-        style={{
-          width: 80,
-          padding: '4px 8px',
-          borderRadius: 6,
-          border: '1px solid #ced4da',
-          fontSize: 14,
-        }}
+        onChange={(event) => onChange(event.currentTarget.value)}
+        data={options}
+        w={100}
+        size="sm"
       />
     </Group>
   )

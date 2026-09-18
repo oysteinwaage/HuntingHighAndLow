@@ -4,6 +4,7 @@ import {
   Button,
   Checkbox,
   Group,
+  Modal,
   Paper,
   Stack,
   Tabs,
@@ -43,43 +44,86 @@ function AddItemForm({ onAdd, placeholder }) {
   )
 }
 
-function ItemRow({ item, onToggle, onRemove, canRemove, showChecked = true }) {
+function ItemRow({ item, onToggle, onRemove, canRemove, showChecked = true, confirmRemove = false }) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  function handleRemoveClick() {
+    if (confirmRemove) {
+      setConfirmOpen(true)
+    } else {
+      onRemove(item.id)
+    }
+  }
+
   return (
-    <Group justify="space-between" py={6} px={6} className={styles.itemRow} wrap="nowrap">
-      <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-        {showChecked && (
-          <Checkbox
-            checked={Boolean(item.checked)}
-            onChange={(event) => onToggle(item.id, event.currentTarget.checked)}
-            color="forest"
-          />
+    <>
+      <Group justify="space-between" py={6} px={6} className={styles.itemRow} wrap="nowrap">
+        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+          {showChecked && (
+            <Checkbox
+              checked={Boolean(item.checked)}
+              onChange={(event) => onToggle(item.id, event.currentTarget.checked)}
+              color="forest"
+            />
+          )}
+          <Text
+            truncate
+            td={item.checked && showChecked ? 'line-through' : undefined}
+            c={item.checked && showChecked ? 'dimmed' : undefined}
+          >
+            {item.name}
+          </Text>
+        </Group>
+        {canRemove && (
+          <ActionIcon variant="subtle" color="red" size="sm" onClick={handleRemoveClick} aria-label="Fjern">
+            <IconTrash size={16} />
+          </ActionIcon>
         )}
-        <Text
-          truncate
-          td={item.checked && showChecked ? 'line-through' : undefined}
-          c={item.checked && showChecked ? 'dimmed' : undefined}
-        >
-          {item.name}
-        </Text>
       </Group>
-      {canRemove && (
-        <ActionIcon
-          variant="subtle"
-          color="red"
+
+      {confirmRemove && (
+        <Modal
+          opened={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          title="Fjerne fra standardlisten?"
+          centered
           size="sm"
-          onClick={() => onRemove(item.id)}
-          aria-label="Fjern"
         >
-          <IconTrash size={16} />
-        </ActionIcon>
+          <Stack gap="md">
+            <Text size="sm">
+              Standardlisten deles av alle jegere. Er du sikker på at du vil fjerne «{item.name}»? Dette
+              fjerner den for alle.
+            </Text>
+            <Group justify="flex-end">
+              <Button variant="default" onClick={() => setConfirmOpen(false)}>
+                Avbryt
+              </Button>
+              <Button
+                color="red"
+                onClick={() => {
+                  onRemove(item.id)
+                  setConfirmOpen(false)
+                }}
+              >
+                Fjern
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
       )}
-    </Group>
+    </>
   )
 }
 
 // Reusable "shared or personal checklist with a default template" view,
 // used for Handleliste, Pakkeliste and Forberedelser.
-export function Checklist({ basePath, templatePath, itemLabel = 'ting', defaultTemplateItems }) {
+export function Checklist({
+  basePath,
+  templatePath,
+  itemLabel = 'ting',
+  defaultTemplateItems,
+  listLabel = 'Liste',
+}) {
   const { user } = useAuth()
   const list = useChecklist(basePath, templatePath)
   const template = useItemList(templatePath)
@@ -94,7 +138,7 @@ export function Checklist({ basePath, templatePath, itemLabel = 'ting', defaultT
   return (
     <Tabs defaultValue="liste" keepMounted={false}>
       <Tabs.List mb="md">
-        <Tabs.Tab value="liste">Liste</Tabs.Tab>
+        <Tabs.Tab value="liste">{listLabel}</Tabs.Tab>
         <Tabs.Tab value="standard">Standardliste</Tabs.Tab>
       </Tabs.List>
 
@@ -152,8 +196,8 @@ export function Checklist({ basePath, templatePath, itemLabel = 'ting', defaultT
       <Tabs.Panel value="standard">
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Dette er standardlisten alle kan importere fra. Endringer her påvirker ikke lister som
-            allerede er importert.
+            Dette er standardlisten alle kan importere fra og denne er felles og deles mellom alle jegerne. Endringer her påvirker ikke lister som
+            allerede er importert, men påvirker standardlisten hos alle jegere.
           </Text>
           <AddItemForm
             onAdd={(name) => template.addItem(name)}
@@ -181,6 +225,7 @@ export function Checklist({ basePath, templatePath, itemLabel = 'ting', defaultT
                     showChecked={false}
                     onRemove={template.removeItem}
                     canRemove
+                    confirmRemove
                   />
                 ))}
               </Stack>
