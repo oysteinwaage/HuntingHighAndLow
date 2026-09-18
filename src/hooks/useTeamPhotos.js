@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { onValue, ref, remove, update } from 'firebase/database'
+import { get, onValue, ref, remove, update } from 'firebase/database'
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
@@ -28,11 +28,17 @@ export function useTeamPhotos() {
   }, [])
 
   async function uploadPhoto(year, file) {
+    const yearRef = ref(db, `teamPhotos/${year}`)
+    const existing = await get(yearRef)
+    if (existing.exists()) {
+      throw new Error(`Det er allerede lastet opp et lagbilde for ${year}.`)
+    }
+
     const compressed = await compressImage(file)
     const fileRef = storageRef(storage, `teamPhotos/${year}/lagbilde`)
     await uploadBytes(fileRef, compressed, { contentType: 'image/jpeg' })
     const photoUrl = await getDownloadURL(fileRef)
-    await update(ref(db, `teamPhotos/${year}`), {
+    await update(yearRef, {
       photoUrl,
       updatedAt: Date.now(),
       uploadedByUid: user?.uid ?? null,

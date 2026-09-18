@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
   Button,
@@ -18,13 +18,16 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTeamPhotos } from '../hooks/useTeamPhotos'
 import { MIN_TEAM_PHOTO_YEAR, getTeamPhotoYearOptions } from '../utils/teamPhotoYear'
 
-function UploadModal({ opened, onClose, yearOptions, canUploadYear, onUpload }) {
-  const [year, setYear] = useState(String(yearOptions[0]))
+function UploadModal({ opened, onClose, availableYears, onUpload }) {
+  const [year, setYear] = useState(String(availableYears[0]))
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
 
-  const allowed = canUploadYear(Number(year))
+  useEffect(() => {
+    if (opened) setYear(String(availableYears[0]))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened])
 
   function handleClose() {
     if (uploading) return
@@ -34,7 +37,7 @@ function UploadModal({ opened, onClose, yearOptions, canUploadYear, onUpload }) 
   }
 
   async function handleSubmit() {
-    if (!file || !allowed) return
+    if (!file) return
     setUploading(true)
     setError(null)
     try {
@@ -51,26 +54,22 @@ function UploadModal({ opened, onClose, yearOptions, canUploadYear, onUpload }) 
   return (
     <Modal opened={opened} onClose={handleClose} title="Last opp jaktbilde">
       <Stack gap="sm">
-        <NativeSelect
-          label="År"
-          value={year}
-          onChange={(event) => setYear(event.currentTarget.value)}
-          data={yearOptions.map(String)}
-        />
-        {!allowed && (
-          <Text c="red" size="sm">
-            Bildet for {year} er lastet opp av en annen bruker. Bare den brukeren eller admin kan
-            erstatte det.
+        {availableYears.length === 0 ? (
+          <Text c="dimmed" size="sm">
+            Alle år har allerede et lagbilde. Slett et eksisterende bilde for å laste opp et nytt
+            for det året.
           </Text>
+        ) : (
+          <>
+            <NativeSelect
+              label="År"
+              value={year}
+              onChange={(event) => setYear(event.currentTarget.value)}
+              data={availableYears.map(String)}
+            />
+            <FileInput label="Bilde" placeholder="Velg bilde" accept="image/*" value={file} onChange={setFile} />
+          </>
         )}
-        <FileInput
-          label="Bilde"
-          placeholder="Velg bilde"
-          accept="image/*"
-          value={file}
-          onChange={setFile}
-          disabled={!allowed}
-        />
         {error && (
           <Text c="red" size="sm">
             {error}
@@ -84,7 +83,7 @@ function UploadModal({ opened, onClose, yearOptions, canUploadYear, onUpload }) 
             color="forest"
             onClick={handleSubmit}
             loading={uploading}
-            disabled={!file || !allowed}
+            disabled={!file || availableYears.length === 0}
           >
             Last opp
           </Button>
@@ -95,23 +94,23 @@ function UploadModal({ opened, onClose, yearOptions, canUploadYear, onUpload }) 
 }
 
 export function JaktbilderPage() {
-  const { user, isAdmin } = useAuth()
+  const { isAdmin } = useAuth()
   const { photosByYear, loading, error, uploadPhoto, deletePhoto } = useTeamPhotos()
   const yearOptions = useMemo(() => getTeamPhotoYearOptions(), [])
 
   const [modalOpen, setModalOpen] = useState(false)
+  const [confirmDeleteYear, setConfirmDeleteYear] = useState(null)
   const [deletingYear, setDeletingYear] = useState(null)
 
   const years = Object.keys(photosByYear)
     .map(Number)
     .sort((a, b) => b - a)
 
-  function canUploadYear(year) {
-    const photo = photosByYear[year]
-    return !photo || photo.uploadedByUid === user?.uid || isAdmin
-  }
+  const availableYears = yearOptions.filter((y) => !photosByYear[y])
 
-  async function handleDelete(year) {
+  async function handleConfirmDelete() {
+    const year = confirmDeleteYear
+    setConfirmDeleteYear(null)
     setDeletingYear(year)
     try {
       await deletePhoto(year)
@@ -127,9 +126,11 @@ export function JaktbilderPage() {
           <Title order={2}>Jaktbilder</Title>
           <Text c="dimmed">Lagbilde for hvert år, fra {MIN_TEAM_PHOTO_YEAR} og frem til i dag.</Text>
         </div>
-        <Button leftSection={<IconUpload size={16} />} color="forest" onClick={() => setModalOpen(true)}>
-          Last opp bilde
-        </Button>
+        {isAdmin && (
+          <Button leftSection={<IconUpload size={16} />} color="forest" onClick={() => setModalOpen(true)}>
+            Last opp bilde
+          </Button>
+        )}
       </Group>
 
       {loading ? (
@@ -152,17 +153,16 @@ export function JaktbilderPage() {
           <Stack gap="lg" pr="sm">
             {years.map((year) => {
               const photo = photosByYear[year]
-              const canManage = photo.uploadedByUid === user?.uid || isAdmin
               return (
                 <Paper key={year} withBorder radius="md" p="md">
                   <Stack gap="sm">
                     <Group justify="space-between" align="center">
                       <Title order={3}>{year}</Title>
-                      {canManage && (
+                      {isAdmin && (
                         <ActionIcon
                           variant="subtle"
                           color="red"
-                          onClick={() => handleDelete(year)}
+                          onClick={() => setConfirmDeleteYear(year)}
                           loading={deletingYear === year}
                           aria-label={`Slett bilde for ${year}`}
                         >
@@ -185,10 +185,29 @@ export function JaktbilderPage() {
       <UploadModal
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
-        yearOptions={yearOptions}
-        canUploadYear={canUploadYear}
+        availableYears={availableYears}
         onUpload={uploadPhoto}
       />
+
+      <Modal
+        opened={confirmDeleteYear !== null}
+        onClose={() => setConfirmDeleteYear(null)}
+        title="Slette jaktbilde?"
+        centered
+        size="sm"
+      >
+        <Stack gap="md">
+          <Text size="sm">Er du sikker på at du vil slette lagbildet for {confirmDeleteYear}?</Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setConfirmDeleteYear(null)}>
+              Avbryt
+            </Button>
+            <Button color="red" onClick={handleConfirmDelete}>
+              Slett
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }
