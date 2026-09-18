@@ -20,6 +20,7 @@ import {
   IconShoppingCart,
 } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
+import hunterIcon from '../assets/hunter-icon.png'
 import classes from './Layout.module.scss'
 
 const NAV_ITEMS = [
@@ -45,8 +46,9 @@ export function Layout() {
         <Group h="100%" px="md" justify="space-between">
           <Group gap="sm">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <img src={hunterIcon} alt="" height={28} style={{ display: 'block' }} />
             <Text fw={700} size="lg" c="forest.7">
-              🐦 Hunting High &amp; Low
+              Hunting High &amp; Low
             </Text>
           </Group>
           {user && (

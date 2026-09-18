@@ -3,6 +3,7 @@ import { Button, Center, Paper, Stack, Text, Title } from '@mantine/core'
 import { IconBrandGoogle } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useAuth } from '../contexts/AuthContext'
+import hunterIcon from '../assets/hunter-icon.png'
 
 export function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth()
@@ -27,7 +28,7 @@ export function LoginPage() {
     <Center h="100svh" p="md">
       <Paper withBorder shadow="md" radius="lg" p="xl" w={380} maw="100%">
         <Stack align="center" gap="md">
-          <Text size="48px">🐦</Text>
+          <img src={hunterIcon} alt="" height={90} />
           <Title order={2} ta="center">
             Hunting High &amp; Low
           </Title>
