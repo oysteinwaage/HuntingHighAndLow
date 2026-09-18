@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ActionIcon, Text } from '@mantine/core'
-import { IconShare, IconSquarePlus, IconX } from '@tabler/icons-react'
+import { IconShare2, IconSquarePlus, IconX } from '@tabler/icons-react'
 import classes from './IosInstallBanner.module.scss'
 
 const STORAGE_KEY = 'ios-install-banner-count'
@@ -52,7 +52,7 @@ export function IosInstallBanner() {
             </li>
             <li>
               <span className={classes.step}>2.</span> Velg <span className={classes.step}>Del</span>{' '}
-              <IconShare size={12} stroke={2.5} className={classes.inlineIcon} />
+              <IconShare2 size={12} stroke={2.5} className={classes.inlineIcon} />
             </li>
             <li>
               <span className={classes.step}>3.</span> Scroll ned og trykk{' '}
