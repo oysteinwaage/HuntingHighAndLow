@@ -1,11 +1,30 @@
 import { useEffect, useState } from 'react'
 import { get, onValue, ref, update } from 'firebase/database'
 import { db } from '../firebase'
+import { useAuth } from '../contexts/AuthContext'
 import { useItemList } from './useItemList'
 
 // A checklist for a given year/user, with the ability to import a starting
 // set of items from a shared template list once.
-export function useChecklist(basePath, templatePath) {
+//
+// `dueDateYear`, if given, is used to turn a template item's day/month-only
+// `dueDate` (e.g. "09-18") into a full date (e.g. "2026-09-18") on import,
+// since the template has no year of its own but items in a yearly list do.
+//
+// `filterAssignee`, if true, only imports template items assigned to the
+// current user or to "ALL" (everyone) — used for personal lists like
+// Forberedelser where the shared template can target specific people.
+// `assignedTo` on an item is an array of uids (or ["ALL"]); a bare string is
+// also accepted for items saved before assignment supported multiple users.
+function isAssignedTo(item, uid) {
+  const assignedTo = item.assignedTo
+  if (assignedTo == null) return false
+  const list = Array.isArray(assignedTo) ? assignedTo : [assignedTo]
+  return list.includes('ALL') || list.includes(uid)
+}
+
+export function useChecklist(basePath, templatePath, { dueDateYear, filterAssignee } = {}) {
+  const { user } = useAuth()
   const list = useItemList(basePath)
   const [templateImported, setTemplateImported] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -25,6 +44,11 @@ export function useChecklist(basePath, templatePath) {
       const templateItems = templateSnapshot.val() || {}
       const updates = {}
       Object.entries(templateItems).forEach(([id, item]) => {
+        if (filterAssignee && !isAssignedTo(item, user?.uid)) return
+        let dueDate = item.dueDate
+        if (dueDate !== undefined && dueDateYear && /^\d{2}-\d{2}$/.test(dueDate)) {
+          dueDate = `${dueDateYear}-${dueDate}`
+        }
         updates[`${basePath}/items/${id}`] = {
           name: item.name,
           checked: false,
@@ -32,6 +56,10 @@ export function useChecklist(basePath, templatePath) {
           addedBy: item.addedBy ?? null,
           addedByName: item.addedByName ?? null,
           fromTemplate: true,
+          ...(dueDate !== undefined ? { dueDate } : {}),
+          ...(item.assignedTo !== undefined
+            ? { assignedTo: item.assignedTo, assignedToName: item.assignedToName ?? null }
+            : {}),
         }
       })
       updates[`${basePath}/meta/templateImported`] = true
