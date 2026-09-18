@@ -1,4 +1,4 @@
-import { SimpleGrid, Paper, Stack, Text, Title, ThemeIcon } from '@mantine/core'
+import { Group, SimpleGrid, Paper, Stack, Text, Title, ThemeIcon } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import {
   IconBackpack,
@@ -7,6 +7,7 @@ import {
   IconShoppingCart,
 } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
+import { NextHuntCard } from '../components/NextHuntCard'
 
 const CARDS = [
   {
@@ -41,10 +42,13 @@ export function HomePage() {
 
   return (
     <Stack gap="lg" mt="md">
-      <div>
-        <Title order={2}>{firstName ? `Hei, ${firstName}!` : 'Hei!'}</Title>
-        <Text c="dimmed">Velg hva du vil se på.</Text>
-      </div>
+      <Group justify="space-between" wrap="wrap" align="flex-start">
+        <div>
+          <Title order={2}>{firstName ? `Hei, ${firstName}!` : 'Hei!'}</Title>
+          <Text c="dimmed">Velg hva du vil se på.</Text>
+        </div>
+        <NextHuntCard />
+      </Group>
 
       <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="md">
         {CARDS.map((card) => (

@@ -46,10 +46,10 @@ export function Layout() {
         <Group h="100%" px="md" justify="space-between">
           <Group gap="sm">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <img src={hunterIcon} alt="" height={28} style={{ display: 'block' }} />
             <Text fw={700} size="lg" c="forest.7">
               Hunting High &amp; Low
             </Text>
+            <img src={hunterIcon} alt="" height={28} style={{ display: 'block' }} />
           </Group>
           {user && (
             <Menu shadow="md" width={200} position="bottom-end">
