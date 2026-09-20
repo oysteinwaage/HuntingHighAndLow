@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink as RouterNavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink as RouterNavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   AppShell,
   Avatar,
@@ -74,7 +74,14 @@ export function Layout() {
             >
               <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             </Indicator>
-            <Text fw={700} size="lg" c="forest.7">
+            <Text
+              component={Link}
+              to="/"
+              fw={700}
+              size="lg"
+              c="forest.7"
+              style={{ textDecoration: 'none' }}
+            >
               Hunting High &amp; Low
             </Text>
             <UnstyledButton onClick={() => setCelebrating(true)} aria-label="Skyt rypen">
