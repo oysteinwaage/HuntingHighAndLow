@@ -56,6 +56,15 @@ function formatDate(dateStr) {
   return `${d}. ${monthName(m)} ${y}`
 }
 
+// A task you created can be assigned to other people without including
+// yourself (see usePrepTaskActions) — you still get a copy in your own list
+// so you can manage it, but it shouldn't show up as something of yours to
+// check off unless you're actually one of the assignees.
+function isAssignedToCurrentUser(item, uid) {
+  if (!Array.isArray(item.assignedTo)) return true
+  return item.assignedTo.includes('ALL') || item.assignedTo.includes(uid)
+}
+
 // Undone items first (soonest deadline first, undated last), then done items.
 function sortPrepItems(items) {
   return [...items].sort((a, b) => {
@@ -153,7 +162,7 @@ function AddPrepItemModal({ opened, onClose, onAdd, itemLabel, users, mode, year
             description={
               mode === 'template'
                 ? 'La stå tom for å tildele til Alle'
-                : 'Oppgaven tildeles automatisk deg selv. Velg andre for å dele den med dem også.'
+                : 'La stå tom for å tildele kun deg selv. Velg andre for å dele oppgaven — inkluder deg selv i tillegg om du også skal gjøre den.'
             }
             placeholder="Velg en eller flere brukere"
             data={users.map((u) => ({ value: u.uid, label: u.displayName }))}
@@ -309,13 +318,24 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
   const [modalTarget, setModalTarget] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
 
-  // Tasks you created and shared with someone else besides yourself are
-  // pulled out into their own "Assignet til andre" section for management,
-  // instead of being duplicated in the main list.
+  // Tasks you created and assigned to at least one other person get a
+  // read-only management card in "Assignet til andre" (edit/remove there
+  // cascades to every assignee). If you're also one of the assignees
+  // yourself, it additionally shows in your own checkable main list below;
+  // tasks assigned to others only don't (see isAssignedToCurrentUser).
+  // Template imports are excluded even if the template item targets several
+  // people: importing is always a personal, independent copy (no cross-user
+  // fan-out happens at import time), never a task you actually created and
+  // shared.
   const sharedByMeItems = list.items.filter(
-    (item) => item.addedBy === currentUser.uid && Array.isArray(item.assignedTo) && item.assignedTo.length > 1,
+    (item) =>
+      !item.fromTemplate &&
+      item.addedBy === currentUser.uid &&
+      Array.isArray(item.assignedTo) &&
+      item.assignedTo.some((uid) => uid !== currentUser.uid),
   )
-  const mainItems = list.items.filter((item) => !sharedByMeItems.includes(item))
+  const sharedByMeIds = new Set(sharedByMeItems.map((item) => item.id))
+  const mainItems = list.items.filter((item) => isAssignedToCurrentUser(item, currentUser.uid))
 
   function handleAdd(values) {
     if (modalTarget === 'standard') {
@@ -352,11 +372,12 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
 
       <Tabs.Panel value="liste">
         <Stack gap="md">
-          {!list.loading && (!list.templateImported || list.items.length === 0) && (
+          {!list.loading && (
             <Paper withBorder p="sm" radius="md" bg="forest.0">
               <Group justify="space-between" wrap="wrap">
                 <Text size="sm">
-                  Importer oppgaver fra standardlisten som er tildelt deg eller Alle, for å komme i gang.
+                  Importer oppgaver fra standardlisten som er tildelt deg eller Alle. Du får kun de du ikke
+                  allerede har.
                 </Text>
                 <Button
                   size="xs"
@@ -392,7 +413,9 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
           ) : (
             <Stack gap="xs">
               {sortPrepItems(mainItems).map((item) => {
-                const canManage = item.addedBy === currentUser.uid
+                // Items also shown under "Assignet til andre" are managed
+                // (edited/removed) from there, not from this personal copy.
+                const canManage = item.addedBy === currentUser.uid && !sharedByMeIds.has(item.id)
                 return (
                   <PrepItemCard
                     key={item.id}
@@ -419,7 +442,7 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
                   key={item.id}
                   item={item}
                   currentUserUid={currentUser.uid}
-                  onToggle={list.toggleItem}
+                  showChecked={false}
                   onRemove={taskActions.removeTask}
                   onEdit={handleEdit}
                   canRemove
@@ -484,7 +507,7 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
         onClose={handleModalClose}
         onAdd={handleAdd}
         itemLabel={itemLabel}
-        users={modalTarget === 'standard' ? assignableUsers : assignableUsers.filter((u) => u.uid !== currentUser.uid)}
+        users={assignableUsers}
         mode={modalTarget === 'standard' ? 'template' : 'list'}
         year={year}
         editing={Boolean(editingItem)}
@@ -494,7 +517,7 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
                 name: editingItem.name,
                 ...parseDueDate(editingItem.dueDate),
                 assignedTo: (Array.isArray(editingItem.assignedTo) ? editingItem.assignedTo : []).filter(
-                  (uid) => uid !== currentUser.uid && uid !== 'ALL',
+                  (uid) => uid !== 'ALL',
                 ),
               }
             : null

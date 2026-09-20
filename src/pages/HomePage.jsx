@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   IconBackpack,
   IconChecklist,
+  IconMusic,
   IconNotebook,
   IconShoppingCart,
 } from '@tabler/icons-react'
@@ -33,6 +34,12 @@ const CARDS = [
     icon: IconChecklist,
     title: 'Forberedelser',
     description: 'Det som må huskes i tide før jakta.',
+  },
+  {
+    to: '/sanger',
+    icon: IconMusic,
+    title: 'Sanger',
+    description: 'Alle jaktsangene, samlet på ett sted.',
   },
 ]
 
