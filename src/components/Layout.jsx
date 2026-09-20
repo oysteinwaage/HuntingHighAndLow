@@ -21,6 +21,7 @@ import {
   IconInbox,
   IconLogout,
   IconMessage2,
+  IconMusic,
   IconNotebook,
   IconPhoto,
   IconShoppingCart,
@@ -39,6 +40,7 @@ const NAV_ITEMS = [
   { to: '/pakkeliste', label: 'Pakkeliste', icon: IconBackpack },
   { to: '/forberedelser', label: 'Forberedelser', icon: IconChecklist },
   { to: '/jaktbilder', label: 'Jaktbilder', icon: IconPhoto },
+  { to: '/sanger', label: 'Sanger', icon: IconMusic },
 ]
 
 export function Layout() {
