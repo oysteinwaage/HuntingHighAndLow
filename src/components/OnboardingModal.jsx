@@ -129,6 +129,12 @@ export function OnboardingModal() {
               <IconMessage2 size={14} stroke={2} className={classes.inlineIcon} />-knappen når som helst.
               Lykke til på jakta! 🦌
             </Text>
+            <Group gap="xs" className={classes.hint} wrap="nowrap">
+              <img src={hunterIcon} alt="" height={26} />
+              <Text size="xs" c="forest.8" fw={500}>
+                Psst — trykk på ikonet i headeren når som helst, så skjer det noe gøy!
+              </Text>
+            </Group>
           </Stack>
         )}
       </div>

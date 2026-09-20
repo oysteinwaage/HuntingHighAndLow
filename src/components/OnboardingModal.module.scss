@@ -49,3 +49,11 @@
   transform: translateY(-1px);
   margin: 0 2px;
 }
+
+.hint {
+  margin-top: 4px;
+  padding: 10px 14px;
+  border-radius: v.$radius-md;
+  border: 1px dashed v.$color-forest-light;
+  background: v.$color-cream;
+}
