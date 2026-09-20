@@ -47,6 +47,10 @@ export function useItemList(basePath) {
     })
   }
 
+  async function updateItem(id, updates) {
+    await update(ref(db, `${basePath}/items/${id}`), updates)
+  }
+
   async function toggleItem(id, checked) {
     await update(ref(db, `${basePath}/items/${id}`), {
       checked,
@@ -84,5 +88,5 @@ export function useItemList(basePath) {
     await update(ref(db), updates)
   }
 
-  return { items, loading, error, addItem, toggleItem, removeItem, seedIfEmpty }
+  return { items, loading, error, addItem, updateItem, toggleItem, removeItem, seedIfEmpty }
 }

@@ -339,11 +339,20 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
 
   function handleAdd(values) {
     if (modalTarget === 'standard') {
-      template.addItem(values.name, {
-        dueDate: values.dueDate,
-        assignedTo: values.assignedTo,
-        assignedToName: values.assignedToName,
-      })
+      if (editingItem) {
+        template.updateItem(editingItem.id, {
+          name: values.name,
+          dueDate: values.dueDate,
+          assignedTo: values.assignedTo,
+          assignedToName: values.assignedToName,
+        })
+      } else {
+        template.addItem(values.name, {
+          dueDate: values.dueDate,
+          assignedTo: values.assignedTo,
+          assignedToName: values.assignedToName,
+        })
+      }
     } else if (editingItem) {
       taskActions.editTask(editingItem, values)
     } else {
@@ -361,6 +370,11 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
   function handleEdit(item) {
     setEditingItem(item)
     setModalTarget('liste')
+  }
+
+  function handleEditTemplateItem(item) {
+    setEditingItem(item)
+    setModalTarget('standard')
   }
 
   return (
@@ -491,7 +505,9 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
                   key={item.id}
                   item={item}
                   showChecked={false}
+                  onEdit={handleEditTemplateItem}
                   onRemove={(removedItem) => template.removeItem(removedItem.id)}
+                  canEdit
                   canRemove
                   confirmRemove
                 />
