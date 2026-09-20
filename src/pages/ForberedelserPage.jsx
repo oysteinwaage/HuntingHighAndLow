@@ -1,22 +1,29 @@
-import { useState } from 'react'
-import { Group, Stack, Text, Title } from '@mantine/core'
+import { Center, Group, Loader, Stack, Text, Title } from '@mantine/core'
 import { PrepChecklist } from '../components/PrepChecklist'
 import { YearSelector } from '../components/YearSelector'
 import { useAuth } from '../contexts/AuthContext'
-import { clampHuntingYear, getCurrentHuntingYear } from '../utils/year'
+import { useDefaultHuntYear } from '../hooks/useDefaultHuntYear'
 
 export function ForberedelserPage() {
   const { user } = useAuth()
-  const [year, setYear] = useState(clampHuntingYear(getCurrentHuntingYear()))
+  const { year, onChange, ready } = useDefaultHuntYear()
+
+  if (!ready) {
+    return (
+      <Center h={200}>
+        <Loader color="forest" />
+      </Center>
+    )
+  }
 
   return (
     <Stack gap="lg" mt="md">
       <Group justify="space-between" wrap="wrap">
         <div>
           <Title order={2}>Forberedelser</Title>
-          <Text c="dimmed">Din personlige liste – kun synlig for deg.</Text>
+          <Text c="dimmed">Din personlige liste. Oppgaver du oppretter kan tildeles og deles med andre.</Text>
         </div>
-        <YearSelector year={year} onChange={setYear} />
+        <YearSelector year={year} onChange={onChange} />
       </Group>
 
       <PrepChecklist

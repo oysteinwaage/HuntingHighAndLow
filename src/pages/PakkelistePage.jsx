@@ -1,13 +1,20 @@
-import { useState } from 'react'
-import { Group, Stack, Text, Title } from '@mantine/core'
+import { Center, Group, Loader, Stack, Text, Title } from '@mantine/core'
 import { Checklist } from '../components/Checklist'
 import { YearSelector } from '../components/YearSelector'
 import { useAuth } from '../contexts/AuthContext'
-import { clampHuntingYear, getCurrentHuntingYear } from '../utils/year'
+import { useDefaultHuntYear } from '../hooks/useDefaultHuntYear'
 
 export function PakkelistePage() {
   const { user } = useAuth()
-  const [year, setYear] = useState(clampHuntingYear(getCurrentHuntingYear()))
+  const { year, onChange, ready } = useDefaultHuntYear()
+
+  if (!ready) {
+    return (
+      <Center h={200}>
+        <Loader color="forest" />
+      </Center>
+    )
+  }
 
   return (
     <Stack gap="lg" mt="md">
@@ -16,7 +23,7 @@ export function PakkelistePage() {
           <Title order={2}>Pakkeliste</Title>
           <Text c="dimmed">Din personlige pakkeliste – kun synlig for deg.</Text>
         </div>
-        <YearSelector year={year} onChange={setYear} />
+        <YearSelector year={year} onChange={onChange} />
       </Group>
 
       <Checklist

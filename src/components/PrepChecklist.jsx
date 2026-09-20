@@ -15,9 +15,11 @@ import {
   Text,
   Textarea,
 } from '@mantine/core'
-import { IconCalendarEvent, IconDownload, IconPlus, IconTrash, IconUser } from '@tabler/icons-react'
+import { IconCalendarEvent, IconDownload, IconPencil, IconPlus, IconTrash, IconUser } from '@tabler/icons-react'
+import { useAuth } from '../contexts/AuthContext'
 import { useChecklist } from '../hooks/useChecklist'
 import { useItemList } from '../hooks/useItemList'
+import { usePrepTaskActions } from '../hooks/usePrepTaskActions'
 import { useUsers } from '../hooks/useUsers'
 
 const MONTHS = [
@@ -65,13 +67,25 @@ function sortPrepItems(items) {
   })
 }
 
+// "YYYY-MM-DD" or "MM-DD" -> { day: number, month: "MM" } for pre-filling
+// the edit form.
+function parseDueDate(dueDate) {
+  if (!dueDate) return { day: '', month: '' }
+  const parts = dueDate.split('-')
+  const [m, d] = parts.length === 2 ? parts : parts.slice(1)
+  return { day: Number(d), month: m }
+}
+
 // `mode` is "template" (day/month only, no year) or "list" (day/month, but
-// combined with `year` into a full date before it's saved).
-function AddPrepItemModal({ opened, onClose, onAdd, itemLabel, users, mode, year }) {
-  const [text, setText] = useState('')
-  const [day, setDay] = useState('')
-  const [month, setMonth] = useState('')
-  const [assignedTo, setAssignedTo] = useState([])
+// combined with `year` into a full date before it's saved). In "list" mode
+// the item is always assigned to the current user too (handled by the
+// caller), so an empty selection here just means "only me" rather than
+// "everyone" the way it does for the shared template.
+function AddPrepItemModal({ opened, onClose, onAdd, itemLabel, users, mode, year, initialValues, editing }) {
+  const [text, setText] = useState(initialValues?.name ?? '')
+  const [day, setDay] = useState(initialValues?.day ?? '')
+  const [month, setMonth] = useState(initialValues?.month ?? '')
+  const [assignedTo, setAssignedTo] = useState(initialValues?.assignedTo ?? [])
 
   function handleClose() {
     setText('')
@@ -87,17 +101,31 @@ function AddPrepItemModal({ opened, onClose, onAdd, itemLabel, users, mode, year
     const dayMonth = `${month}-${String(day).padStart(2, '0')}`
     const dueDate = mode === 'template' ? dayMonth : `${year}-${dayMonth}`
     const selectedUsers = users.filter((u) => assignedTo.includes(u.uid))
-    onAdd({
-      name: text.trim(),
-      dueDate,
-      assignedTo: selectedUsers.length > 0 ? selectedUsers.map((u) => u.uid) : ['ALL'],
-      assignedToName: selectedUsers.length > 0 ? selectedUsers.map((u) => u.displayName).join(', ') : 'Alle',
-    })
+    if (mode === 'template') {
+      onAdd({
+        name: text.trim(),
+        dueDate,
+        assignedTo: selectedUsers.length > 0 ? selectedUsers.map((u) => u.uid) : ['ALL'],
+        assignedToName: selectedUsers.length > 0 ? selectedUsers.map((u) => u.displayName).join(', ') : 'Alle',
+      })
+    } else {
+      onAdd({
+        name: text.trim(),
+        dueDate,
+        assignedTo: selectedUsers.map((u) => u.uid),
+        assignedToName: selectedUsers.length > 0 ? selectedUsers.map((u) => u.displayName).join(', ') : undefined,
+      })
+    }
     handleClose()
   }
 
   return (
-    <Modal opened={opened} onClose={handleClose} title={`Legg til ${itemLabel}`} centered>
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title={`${editing ? 'Rediger' : 'Legg til'} ${itemLabel}`}
+      centered
+    >
       <form onSubmit={handleSubmit}>
         <Stack gap="sm">
           <Textarea
@@ -122,7 +150,11 @@ function AddPrepItemModal({ opened, onClose, onAdd, itemLabel, users, mode, year
           </Group>
           <MultiSelect
             label="Tildel til"
-            description="La stå tom for å tildele til Alle"
+            description={
+              mode === 'template'
+                ? 'La stå tom for å tildele til Alle'
+                : 'Oppgaven tildeles automatisk deg selv. Velg andre for å dele den med dem også.'
+            }
             placeholder="Velg en eller flere brukere"
             data={users.map((u) => ({ value: u.uid, label: u.displayName }))}
             value={assignedTo}
@@ -135,7 +167,7 @@ function AddPrepItemModal({ opened, onClose, onAdd, itemLabel, users, mode, year
               Avbryt
             </Button>
             <Button type="submit" color="forest">
-              Legg til
+              {editing ? 'Lagre' : 'Legg til'}
             </Button>
           </Group>
         </Stack>
@@ -144,15 +176,26 @@ function AddPrepItemModal({ opened, onClose, onAdd, itemLabel, users, mode, year
   )
 }
 
-function PrepItemCard({ item, onToggle, onRemove, canRemove, showChecked = true, confirmRemove = false }) {
+function PrepItemCard({
+  item,
+  currentUserUid,
+  onToggle,
+  onRemove,
+  onEdit,
+  canRemove,
+  canEdit,
+  showChecked = true,
+  confirmRemove = false,
+}) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const overdue = showChecked && !item.checked && item.dueDate && item.dueDate < todayIso()
+  const createdByOther = item.addedBy && currentUserUid && item.addedBy !== currentUserUid
 
   function handleRemoveClick() {
     if (confirmRemove) {
       setConfirmOpen(true)
     } else {
-      onRemove(item.id)
+      onRemove(item)
     }
   }
 
@@ -177,7 +220,7 @@ function PrepItemCard({ item, onToggle, onRemove, canRemove, showChecked = true,
               >
                 {item.name}
               </Text>
-              {(item.dueDate || item.assignedToName) && (
+              {(item.dueDate || item.assignedToName || createdByOther) && (
                 <Group gap="xs" wrap="wrap">
                   {item.dueDate && (
                     <Badge
@@ -193,15 +236,27 @@ function PrepItemCard({ item, onToggle, onRemove, canRemove, showChecked = true,
                       {item.assignedToName}
                     </Badge>
                   )}
+                  {createdByOther && (
+                    <Badge color="grape" variant="outline" leftSection={<IconUser size={12} />}>
+                      Opprettet av {item.addedByName || 'ukjent'}
+                    </Badge>
+                  )}
                 </Group>
               )}
             </Stack>
           </Group>
-          {canRemove && (
-            <ActionIcon variant="subtle" color="red" size="sm" onClick={handleRemoveClick} aria-label="Fjern">
-              <IconTrash size={16} />
-            </ActionIcon>
-          )}
+          <Group gap={4} wrap="nowrap">
+            {canEdit && (
+              <ActionIcon variant="subtle" color="forest" size="sm" onClick={() => onEdit(item)} aria-label="Rediger">
+                <IconPencil size={16} />
+              </ActionIcon>
+            )}
+            {canRemove && (
+              <ActionIcon variant="subtle" color="red" size="sm" onClick={handleRemoveClick} aria-label="Fjern">
+                <IconTrash size={16} />
+              </ActionIcon>
+            )}
+          </Group>
         </Group>
       </Paper>
 
@@ -225,7 +280,7 @@ function PrepItemCard({ item, onToggle, onRemove, canRemove, showChecked = true,
               <Button
                 color="red"
                 onClick={() => {
-                  onRemove(item.id)
+                  onRemove(item)
                   setConfirmOpen(false)
                 }}
               >
@@ -243,19 +298,46 @@ function PrepItemCard({ item, onToggle, onRemove, canRemove, showChecked = true,
 // per item. Mirrors Checklist's "shared list + shared template" structure,
 // used for Forberedelser.
 export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', listLabel = 'Liste', year }) {
+  const { user: currentUser } = useAuth()
   const list = useChecklist(basePath, templatePath, { dueDateYear: year, filterAssignee: true })
   const template = useItemList(templatePath)
+  const taskActions = usePrepTaskActions(year)
   const { users } = useUsers()
   const [modalTarget, setModalTarget] = useState(null)
+  const [editingItem, setEditingItem] = useState(null)
+
+  // Tasks you created and shared with someone else besides yourself are
+  // pulled out into their own "Assignet til andre" section for management,
+  // instead of being duplicated in the main list.
+  const sharedByMeItems = list.items.filter(
+    (item) => item.addedBy === currentUser.uid && Array.isArray(item.assignedTo) && item.assignedTo.length > 1,
+  )
+  const mainItems = list.items.filter((item) => !sharedByMeItems.includes(item))
 
   function handleAdd(values) {
-    const target = modalTarget === 'standard' ? template : list
-    target.addItem(values.name, {
-      dueDate: values.dueDate,
-      assignedTo: values.assignedTo,
-      assignedToName: values.assignedToName,
-    })
+    if (modalTarget === 'standard') {
+      template.addItem(values.name, {
+        dueDate: values.dueDate,
+        assignedTo: values.assignedTo,
+        assignedToName: values.assignedToName,
+      })
+    } else if (editingItem) {
+      taskActions.editTask(editingItem, values)
+    } else {
+      taskActions.addTask(values)
+    }
     setModalTarget(null)
+    setEditingItem(null)
+  }
+
+  function handleModalClose() {
+    setModalTarget(null)
+    setEditingItem(null)
+  }
+
+  function handleEdit(item) {
+    setEditingItem(item)
+    setModalTarget('liste')
   }
 
   return (
@@ -300,19 +382,45 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
             <Text c="red" size="sm">
               Klarte ikke å laste listen. Sjekk Firebase-oppsettet (se README).
             </Text>
-          ) : list.items.length === 0 ? (
+          ) : mainItems.length === 0 ? (
             <Text c="dimmed" size="sm">
               Ingen oppgaver lagt til enda.
             </Text>
           ) : (
             <Stack gap="xs">
-              {sortPrepItems(list.items).map((item) => (
+              {sortPrepItems(mainItems).map((item) => {
+                const canManage = item.addedBy === currentUser.uid
+                return (
+                  <PrepItemCard
+                    key={item.id}
+                    item={item}
+                    currentUserUid={currentUser.uid}
+                    onToggle={list.toggleItem}
+                    onRemove={taskActions.removeTask}
+                    onEdit={handleEdit}
+                    canRemove={canManage}
+                    canEdit={canManage}
+                  />
+                )
+              })}
+            </Stack>
+          )}
+
+          {sharedByMeItems.length > 0 && (
+            <Stack gap="xs" mt="md">
+              <Text fw={600} size="sm">
+                Assignet til andre
+              </Text>
+              {sortPrepItems(sharedByMeItems).map((item) => (
                 <PrepItemCard
                   key={item.id}
                   item={item}
+                  currentUserUid={currentUser.uid}
                   onToggle={list.toggleItem}
-                  onRemove={list.removeItem}
+                  onRemove={taskActions.removeTask}
+                  onEdit={handleEdit}
                   canRemove
+                  canEdit
                 />
               ))}
             </Stack>
@@ -357,7 +465,7 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
                   key={item.id}
                   item={item}
                   showChecked={false}
-                  onRemove={template.removeItem}
+                  onRemove={(removedItem) => template.removeItem(removedItem.id)}
                   canRemove
                   confirmRemove
                 />
@@ -368,13 +476,26 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
       </Tabs.Panel>
 
       <AddPrepItemModal
+        key={editingItem?.id ?? modalTarget ?? 'closed'}
         opened={modalTarget != null}
-        onClose={() => setModalTarget(null)}
+        onClose={handleModalClose}
         onAdd={handleAdd}
         itemLabel={itemLabel}
-        users={users}
+        users={modalTarget === 'standard' ? users : users.filter((u) => u.uid !== currentUser.uid)}
         mode={modalTarget === 'standard' ? 'template' : 'list'}
         year={year}
+        editing={Boolean(editingItem)}
+        initialValues={
+          editingItem
+            ? {
+                name: editingItem.name,
+                ...parseDueDate(editingItem.dueDate),
+                assignedTo: (Array.isArray(editingItem.assignedTo) ? editingItem.assignedTo : []).filter(
+                  (uid) => uid !== currentUser.uid && uid !== 'ALL',
+                ),
+              }
+            : null
+        }
       />
     </Tabs>
   )

@@ -27,7 +27,14 @@
     "prepLists": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "$year": {
+          "items": {
+            "$itemId": {
+              ".write": "auth != null && (auth.uid === $uid || newData.child('addedBy').val() === auth.uid || data.child('addedBy').val() === auth.uid)"
+            }
+          }
+        }
       }
     },
     "prepTemplate": {
