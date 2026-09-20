@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { onValue, push, ref, remove, set } from 'firebase/database'
+import { increment, onValue, push, ref, remove, set, update } from 'firebase/database'
 import { db } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -47,5 +47,15 @@ export function useSongs() {
     await remove(ref(db, `songs/${id}`))
   }
 
-  return { songs, loading, error, addSong, removeSong }
+  // Bumps the song's total play count and this user's own count for it, so
+  // an admin overview can show how many times each user has played each song.
+  async function incrementSongPlay(id) {
+    if (!user?.uid) return
+    await update(ref(db, `songs/${id}`), {
+      playCount: increment(1),
+      [`userPlays/${user.uid}`]: increment(1),
+    })
+  }
+
+  return { songs, loading, error, addSong, removeSong, incrementSongPlay }
 }
