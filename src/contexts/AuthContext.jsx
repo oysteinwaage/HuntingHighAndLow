@@ -13,6 +13,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [roles, setRoles] = useState([])
+  const [onboardingCompleted, setOnboardingCompleted] = useState(null)
+  const [isNewUser, setIsNewUser] = useState(false)
 
   useEffect(() => {
     return onAuthStateChanged(auth, (firebaseUser) => {
@@ -28,6 +30,17 @@ export function AuthProvider({ children }) {
     }
     return onValue(ref(db, `users/${user.uid}/roles`), (snapshot) => {
       setRoles(snapshot.val() || [])
+    })
+  }, [user])
+
+  // null = not yet known, false = needs onboarding, true = done.
+  useEffect(() => {
+    if (!user) {
+      setOnboardingCompleted(null)
+      return
+    }
+    return onValue(ref(db, `users/${user.uid}/onboardingCompleted`), (snapshot) => {
+      setOnboardingCompleted(!!snapshot.val())
     })
   }, [user])
 
@@ -49,6 +62,7 @@ export function AuthProvider({ children }) {
       await update(userRef, { displayName, email, photoURL, lastLogin: now })
     } else {
       await set(userRef, { displayName, email, photoURL, roles: ['JEGER'], createdAt: now, lastLogin: now })
+      setIsNewUser(true)
     }
   }
 
@@ -56,9 +70,35 @@ export function AuthProvider({ children }) {
     await firebaseSignOut(auth)
   }
 
+  async function completeOnboarding() {
+    if (!user) return
+    await update(ref(db, `users/${user.uid}`), { onboardingCompleted: true })
+  }
+
+  // Increments the user's shot-ptarmigan counter and returns the new total.
+  async function incrementRypeCount() {
+    if (!user) return null
+    const userRef = ref(db, `users/${user.uid}`)
+    const snapshot = await get(userRef)
+    const next = (snapshot.val()?.rypeCount || 0) + 1
+    await update(userRef, { rypeCount: next })
+    return next
+  }
+
   const isAdmin = roles.includes('ADMIN')
 
-  const value = { user, loading, roles, isAdmin, signInWithGoogle, signOut }
+  const value = {
+    user,
+    loading,
+    roles,
+    isAdmin,
+    onboardingCompleted,
+    isNewUser,
+    signInWithGoogle,
+    signOut,
+    completeOnboarding,
+    incrementRypeCount,
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

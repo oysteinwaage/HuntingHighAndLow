@@ -17,6 +17,7 @@ import { useDisclosure } from '@mantine/hooks'
 import {
   IconBackpack,
   IconChecklist,
+  IconCrosshair,
   IconHome,
   IconInbox,
   IconLogout,
@@ -32,6 +33,8 @@ import { useFeedbackList } from '../hooks/useFeedback'
 import hunterIcon from '../assets/hunter-icon.png'
 import { FeedbackDialog } from './FeedbackDialog'
 import { IosInstallBanner } from './IosInstallBanner'
+import { OnboardingModal } from './OnboardingModal'
+import { OnboardingCelebration } from './OnboardingCelebration'
 import classes from './Layout.module.scss'
 
 const NAV_ITEMS = [
@@ -47,6 +50,7 @@ const NAV_ITEMS = [
 export function Layout() {
   const [opened, { toggle, close }] = useDisclosure(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [celebrating, setCelebrating] = useState(false)
   const { user, isAdmin, signOut } = useAuth()
   const { unreadCount } = useFeedbackList(isAdmin)
   const location = useLocation()
@@ -73,7 +77,9 @@ export function Layout() {
             <Text fw={700} size="lg" c="forest.7">
               Hunting High &amp; Low
             </Text>
-            <img src={hunterIcon} alt="" height={28} style={{ display: 'block' }} />
+            <UnstyledButton onClick={() => setCelebrating(true)} aria-label="Skyt rypen">
+              <img src={hunterIcon} alt="" height={28} style={{ display: 'block' }} />
+            </UnstyledButton>
           </Group>
           {user && (
             <Menu shadow="md" width={200} position="bottom-end">
@@ -169,6 +175,18 @@ export function Layout() {
             variant="filled"
             color="forest"
           />
+
+          <NavLink
+            label="Skyt rypen"
+            leftSection={<IconCrosshair size={18} stroke={1.75} />}
+            onClick={() => {
+              setCelebrating(true)
+              close()
+            }}
+            className={classes.navLink}
+            variant="filled"
+            color="forest"
+          />
         </div>
       </AppShell.Navbar>
 
@@ -178,6 +196,8 @@ export function Layout() {
 
       <IosInstallBanner />
       <FeedbackDialog opened={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <OnboardingModal />
+      {celebrating && <OnboardingCelebration onDone={() => setCelebrating(false)} />}
     </AppShell>
   )
 }
