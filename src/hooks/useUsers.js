@@ -14,6 +14,7 @@ export function useUsers() {
       const list = Object.entries(value).map(([uid, u]) => ({
         uid,
         displayName: u.displayName || u.email || 'Ukjent bruker',
+        roles: u.roles || [],
       }))
       list.sort((a, b) => a.displayName.localeCompare(b.displayName, 'no'))
       setUsers(list)

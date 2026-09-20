@@ -298,11 +298,14 @@ function PrepItemCard({
 // per item. Mirrors Checklist's "shared list + shared template" structure,
 // used for Forberedelser.
 export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', listLabel = 'Liste', year }) {
-  const { user: currentUser } = useAuth()
+  const { user: currentUser, isAdmin } = useAuth()
   const list = useChecklist(basePath, templatePath, { dueDateYear: year, filterAssignee: true })
   const template = useItemList(templatePath)
   const taskActions = usePrepTaskActions(year)
   const { users } = useUsers()
+  // TEST users are only assignable by admins — everyone else shouldn't see
+  // them as a candidate when tildeling en oppgave.
+  const assignableUsers = isAdmin ? users : users.filter((u) => !u.roles?.includes('TEST'))
   const [modalTarget, setModalTarget] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
 
@@ -481,7 +484,7 @@ export function PrepChecklist({ basePath, templatePath, itemLabel = 'oppgave', l
         onClose={handleModalClose}
         onAdd={handleAdd}
         itemLabel={itemLabel}
-        users={modalTarget === 'standard' ? users : users.filter((u) => u.uid !== currentUser.uid)}
+        users={modalTarget === 'standard' ? assignableUsers : assignableUsers.filter((u) => u.uid !== currentUser.uid)}
         mode={modalTarget === 'standard' ? 'template' : 'list'}
         year={year}
         editing={Boolean(editingItem)}

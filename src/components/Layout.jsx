@@ -25,6 +25,7 @@ import {
   IconNotebook,
   IconPhoto,
   IconShoppingCart,
+  IconUsers,
 } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useFeedbackList } from '../hooks/useFeedback'
@@ -122,6 +123,20 @@ export function Layout() {
         </ScrollArea>
 
         <div className={classes.navFooter}>
+          {isAdmin && (
+            <NavLink
+              component={RouterNavLink}
+              to="/admin"
+              label="Admin"
+              leftSection={<IconUsers size={18} stroke={1.75} />}
+              active={location.pathname.startsWith('/admin')}
+              onClick={close}
+              className={classes.navLink}
+              variant="filled"
+              color="forest"
+            />
+          )}
+
           {isAdmin && (
             <NavLink
               component={RouterNavLink}

@@ -26,8 +26,8 @@
     },
     "prepLists": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('roles').child('0').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('1').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('2').val() === 'ADMIN')",
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('roles').child('0').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('1').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('2').val() === 'ADMIN')",
         "$year": {
           "items": {
             "$itemId": {
@@ -48,13 +48,13 @@
     "packingLists": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('roles').child('0').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('1').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('2').val() === 'ADMIN')"
       }
     },
     "users": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('roles').child('0').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('1').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('2').val() === 'ADMIN')"
       }
     },
     "feedback": {

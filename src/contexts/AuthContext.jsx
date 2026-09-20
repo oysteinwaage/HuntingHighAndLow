@@ -31,15 +31,24 @@ export function AuthProvider({ children }) {
     })
   }, [user])
 
+  // Stamps `lastLogin` on every resolved session (fresh sign-in and
+  // persisted session restore alike), so the admin user list reflects
+  // actual recent use, not just explicit sign-ins.
+  useEffect(() => {
+    if (!user) return
+    update(ref(db, `users/${user.uid}`), { lastLogin: Date.now() })
+  }, [user])
+
   async function signInWithGoogle() {
     const result = await signInWithPopup(auth, googleProvider)
     const { uid, displayName, email, photoURL } = result.user
     const userRef = ref(db, `users/${uid}`)
     const snapshot = await get(userRef)
+    const now = Date.now()
     if (snapshot.exists()) {
-      await update(userRef, { displayName, email, photoURL })
+      await update(userRef, { displayName, email, photoURL, lastLogin: now })
     } else {
-      await set(userRef, { displayName, email, photoURL, roles: ['JEGER'] })
+      await set(userRef, { displayName, email, photoURL, roles: ['JEGER'], createdAt: now, lastLogin: now })
     }
   }
 

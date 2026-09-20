@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { HomePage } from './pages/HomePage'
+import { AdminPage } from './pages/AdminPage'
 import { ErfaringerPage } from './pages/ErfaringerPage'
 import { HandlelistePage } from './pages/HandlelistePage'
 import { PakkelistePage } from './pages/PakkelistePage'
@@ -30,6 +31,7 @@ function App() {
         <Route path="/jaktbilder" element={<JaktbilderPage />} />
         <Route path="/sanger" element={<SangerPage />} />
         <Route path="/tilbakemeldinger" element={<TilbakemeldingerPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Route>
     </Routes>
   )
