@@ -14,7 +14,12 @@
     },
     "catchReports": {
       ".read": "auth != null",
-      ".write": "auth != null && (root.child('users').child(auth.uid).child('roles').child('0').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('1').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('2').val() === 'ADMIN')"
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('roles').child('0').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('1').val() === 'ADMIN' || root.child('users').child(auth.uid).child('roles').child('2').val() === 'ADMIN')",
+      "$year": {
+        "huntDays": {
+          ".write": "auth != null"
+        }
+      }
     },
     "songs": {
       ".read": "auth != null",

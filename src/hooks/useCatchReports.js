@@ -53,6 +53,10 @@ export function useCatchReports() {
     await set(dayRef, { date, area })
   }
 
+  async function updateHuntDay(year, dayId, { date, area }) {
+    await update(ref(db, `catchReports/${year}/huntDays/${dayId}`), { date, area })
+  }
+
   async function removeHuntDay(year, dayId) {
     await remove(ref(db, `catchReports/${year}/huntDays/${dayId}`))
   }
@@ -60,6 +64,15 @@ export function useCatchReports() {
   async function addCatch(year, dayId, { participantUid, participantName, species, count }) {
     const catchRef = push(ref(db, `catchReports/${year}/huntDays/${dayId}/catches`))
     await set(catchRef, { participantUid, participantName, species, count })
+  }
+
+  async function updateCatch(year, dayId, catchId, { participantUid, participantName, species, count }) {
+    await update(ref(db, `catchReports/${year}/huntDays/${dayId}/catches/${catchId}`), {
+      participantUid,
+      participantName,
+      species,
+      count,
+    })
   }
 
   async function removeCatch(year, dayId, catchId) {
@@ -74,8 +87,10 @@ export function useCatchReports() {
     updateParticipants,
     removeReport,
     addHuntDay,
+    updateHuntDay,
     removeHuntDay,
     addCatch,
+    updateCatch,
     removeCatch,
   }
 }

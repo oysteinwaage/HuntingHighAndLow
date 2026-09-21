@@ -185,15 +185,15 @@ function NewReportModal({ opened, onClose, availableYears, users, onCreate }) {
   )
 }
 
-function AddHuntDayModal({ opened, onClose, days, onAdd }) {
+function HuntDayModal({ opened, onClose, days, initialValues, editing, onSave }) {
   const [date, setDate] = useState('')
   const [area, setArea] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (opened) {
-      setDate(days[0] ? toDateString(days[0]) : '')
-      setArea('')
+      setDate(initialValues?.date ?? (days[0] ? toDateString(days[0]) : ''))
+      setArea(initialValues?.area ?? '')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened])
@@ -207,14 +207,14 @@ function AddHuntDayModal({ opened, onClose, days, onAdd }) {
     if (!date || !area.trim()) return
     setSaving(true)
     try {
-      await onAdd({ date, area: area.trim() })
+      await onSave({ date, area: area.trim() })
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal opened={opened} onClose={handleClose} title="Legg til jaktdag" centered size="sm">
+    <Modal opened={opened} onClose={handleClose} title={editing ? 'Rediger jaktdag' : 'Legg til jaktdag'} centered size="sm">
       <Stack gap="sm">
         <NativeSelect
           label="Jaktdag"
@@ -233,7 +233,7 @@ function AddHuntDayModal({ opened, onClose, days, onAdd }) {
             Avbryt
           </Button>
           <Button color="forest" onClick={handleSubmit} loading={saving} disabled={!date || !area.trim()}>
-            Legg til
+            {editing ? 'Lagre' : 'Legg til'}
           </Button>
         </Group>
       </Stack>
@@ -241,17 +241,20 @@ function AddHuntDayModal({ opened, onClose, days, onAdd }) {
   )
 }
 
-function AddCatchModal({ opened, onClose, participants, onAdd }) {
-  const [participantUid, setParticipantUid] = useState(participants[0]?.[0] ?? '')
+// Regular users can edit a catch's count down to 0 as an alternative to
+// deleting it outright (deleting stays admin-only) — so 0 is only a valid
+// starting/typed value once a catch already exists.
+function CatchModal({ opened, onClose, participants, initialValues, editing, onSave }) {
+  const [participantUid, setParticipantUid] = useState('')
   const [species, setSpecies] = useState('rype')
   const [count, setCount] = useState(1)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (opened) {
-      setParticipantUid(participants[0]?.[0] ?? '')
-      setSpecies('rype')
-      setCount(1)
+      setParticipantUid(initialValues?.participantUid ?? participants[0]?.[0] ?? '')
+      setSpecies(initialValues?.species ?? 'rype')
+      setCount(initialValues?.count ?? 1)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened])
@@ -262,17 +265,17 @@ function AddCatchModal({ opened, onClose, participants, onAdd }) {
   }
 
   async function handleSubmit() {
-    if (!participantUid || !count) return
+    if (!participantUid || count === '' || count === null) return
     setSaving(true)
     try {
-      await onAdd({ participantUid, species, count: Number(count) })
+      await onSave({ participantUid, species, count: Number(count) })
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal opened={opened} onClose={handleClose} title="Legg til fangst" centered size="sm">
+    <Modal opened={opened} onClose={handleClose} title={editing ? 'Rediger fangst' : 'Legg til fangst'} centered size="sm">
       <Stack gap="sm">
         <Select
           label="Deltaker som fikk fangst"
@@ -286,13 +289,24 @@ function AddCatchModal({ opened, onClose, participants, onAdd }) {
           value={species}
           onChange={(value) => setSpecies(value ?? 'rype')}
         />
-        <NumberInput label="Antall" min={1} value={count} onChange={setCount} />
+        <NumberInput
+          label="Antall"
+          description={editing ? 'Sett til 0 for å fjerne fangsten uten å slette raden.' : undefined}
+          min={editing ? 0 : 1}
+          value={count}
+          onChange={setCount}
+        />
         <Group justify="flex-end">
           <Button variant="default" onClick={handleClose} disabled={saving}>
             Avbryt
           </Button>
-          <Button color="forest" onClick={handleSubmit} loading={saving} disabled={!participantUid || !count}>
-            Legg til
+          <Button
+            color="forest"
+            onClick={handleSubmit}
+            loading={saving}
+            disabled={!participantUid || count === '' || count === null}
+          >
+            {editing ? 'Lagre' : 'Legg til'}
           </Button>
         </Group>
       </Stack>
@@ -300,7 +314,7 @@ function AddCatchModal({ opened, onClose, participants, onAdd }) {
   )
 }
 
-function HuntDayCard({ day, isAdmin, onAddCatch, onRemoveDay, onRemoveCatch }) {
+function HuntDayCard({ day, isAdmin, onAddCatch, onEditDay, onRemoveDay, onEditCatch, onRemoveCatch }) {
   const catches = Object.entries(day.catches || {}).map(([id, c]) => ({ id, ...c }))
 
   return (
@@ -315,11 +329,16 @@ function HuntDayCard({ day, isAdmin, onAddCatch, onRemoveDay, onRemoveCatch }) {
               {day.area}
             </Text>
           </div>
-          {isAdmin && (
-            <ActionIcon variant="subtle" color="red" size="sm" onClick={onRemoveDay} aria-label="Slett jaktdag">
-              <IconTrash size={16} />
+          <Group gap={4} wrap="nowrap">
+            <ActionIcon variant="subtle" color="forest" size="sm" onClick={onEditDay} aria-label="Rediger jaktdag">
+              <IconPencil size={16} />
             </ActionIcon>
-          )}
+            {isAdmin && (
+              <ActionIcon variant="subtle" color="red" size="sm" onClick={onRemoveDay} aria-label="Slett jaktdag">
+                <IconTrash size={16} />
+              </ActionIcon>
+            )}
+          </Group>
         </Group>
 
         {catches.length > 0 && (
@@ -329,29 +348,38 @@ function HuntDayCard({ day, isAdmin, onAddCatch, onRemoveDay, onRemoveCatch }) {
                 <Text size="sm">
                   {c.participantName} – {c.count}x {speciesLabel(c.species)}
                 </Text>
-                {isAdmin && (
+                <Group gap={4} wrap="nowrap">
                   <ActionIcon
                     variant="subtle"
-                    color="red"
+                    color="forest"
                     size="xs"
-                    onClick={() => onRemoveCatch(c.id)}
-                    aria-label="Slett fangst"
+                    onClick={() => onEditCatch(c)}
+                    aria-label="Rediger fangst"
                   >
-                    <IconTrash size={14} />
+                    <IconPencil size={14} />
                   </ActionIcon>
-                )}
+                  {isAdmin && (
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      size="xs"
+                      onClick={() => onRemoveCatch(c.id)}
+                      aria-label="Slett fangst"
+                    >
+                      <IconTrash size={14} />
+                    </ActionIcon>
+                  )}
+                </Group>
               </Group>
             ))}
           </Stack>
         )}
 
-        {isAdmin && (
-          <Group justify="flex-end">
-            <Button size="compact-xs" variant="subtle" color="forest" leftSection={<IconPlus size={12} />} onClick={onAddCatch}>
-              Legg til fangst
-            </Button>
-          </Group>
-        )}
+        <Group justify="flex-end">
+          <Button size="compact-xs" variant="subtle" color="forest" leftSection={<IconPlus size={12} />} onClick={onAddCatch}>
+            Legg til fangst
+          </Button>
+        </Group>
       </Stack>
     </Paper>
   )
@@ -428,8 +456,10 @@ function YearReportCard({ year, report, isAdmin, users, actions }) {
   const daysInPeriod = useMemo(() => getDatesInRange(start, end), [start, end])
   const participantEntries = Object.entries(report.participants || {})
 
-  const [dayModalOpen, setDayModalOpen] = useState(false)
-  const [catchModalDay, setCatchModalDay] = useState(null)
+  // dayModal: null | { mode: 'add' } | { mode: 'edit', day }
+  const [dayModal, setDayModal] = useState(null)
+  // catchModal: null | { dayId, mode: 'add' } | { dayId, mode: 'edit', catch }
+  const [catchModal, setCatchModal] = useState(null)
   const [editParticipantsOpen, setEditParticipantsOpen] = useState(false)
   const [confirmDeleteReport, setConfirmDeleteReport] = useState(false)
 
@@ -490,47 +520,82 @@ function YearReportCard({ year, report, isAdmin, users, actions }) {
                 key={day.id}
                 day={day}
                 isAdmin={isAdmin}
-                onAddCatch={() => setCatchModalDay(day.id)}
+                onAddCatch={() => setCatchModal({ dayId: day.id, mode: 'add' })}
+                onEditDay={() => setDayModal({ mode: 'edit', day })}
                 onRemoveDay={() => actions.removeHuntDay(year, day.id)}
+                onEditCatch={(c) => setCatchModal({ dayId: day.id, mode: 'edit', catch: c })}
                 onRemoveCatch={(catchId) => actions.removeCatch(year, day.id, catchId)}
               />
             ))
           )}
 
-          {isAdmin && (
-            <Group justify="flex-end">
-              <Button
-                size="xs"
-                variant="light"
-                color="forest"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => setDayModalOpen(true)}
-              >
-                Legg til jaktdag
-              </Button>
-            </Group>
-          )}
+          <Group justify="flex-end">
+            <Button
+              size="xs"
+              variant="light"
+              color="forest"
+              leftSection={<IconPlus size={14} />}
+              onClick={() => setDayModal({ mode: 'add' })}
+            >
+              Legg til jaktdag
+            </Button>
+          </Group>
         </Stack>
       </Stack>
 
-      <AddHuntDayModal
-        opened={dayModalOpen}
-        onClose={() => setDayModalOpen(false)}
+      <HuntDayModal
+        opened={dayModal !== null}
+        onClose={() => setDayModal(null)}
         days={daysInPeriod}
-        onAdd={async ({ date, area }) => {
-          await actions.addHuntDay(year, { date, area })
-          setDayModalOpen(false)
+        editing={dayModal?.mode === 'edit'}
+        initialValues={dayModal?.mode === 'edit' ? { date: dayModal.day.date, area: dayModal.day.area } : null}
+        onSave={async ({ date, area }) => {
+          if (dayModal?.mode === 'edit') {
+            await actions.updateHuntDay(year, dayModal.day.id, { date, area })
+          } else {
+            await actions.addHuntDay(year, { date, area })
+          }
+          setDayModal(null)
         }}
       />
 
-      <AddCatchModal
-        opened={catchModalDay !== null}
-        onClose={() => setCatchModalDay(null)}
-        participants={participantEntries}
-        onAdd={async ({ participantUid, species, count }) => {
-          const participantName = report.participants[participantUid]
-          await actions.addCatch(year, catchModalDay, { participantUid, participantName, species, count })
-          setCatchModalDay(null)
+      <CatchModal
+        opened={catchModal !== null}
+        onClose={() => setCatchModal(null)}
+        participants={
+          // Keep an edited catch's original participant selectable even if
+          // they've since been removed from the report's deltakere list.
+          catchModal?.mode === 'edit' && !report.participants?.[catchModal.catch.participantUid]
+            ? [...participantEntries, [catchModal.catch.participantUid, catchModal.catch.participantName]]
+            : participantEntries
+        }
+        editing={catchModal?.mode === 'edit'}
+        initialValues={
+          catchModal?.mode === 'edit'
+            ? {
+                participantUid: catchModal.catch.participantUid,
+                species: catchModal.catch.species,
+                count: catchModal.catch.count,
+              }
+            : null
+        }
+        onSave={async ({ participantUid, species, count }) => {
+          const participantName =
+            report.participants?.[participantUid] ??
+            (catchModal?.mode === 'edit' && participantUid === catchModal.catch.participantUid
+              ? catchModal.catch.participantName
+              : 'Ukjent')
+          if (catchModal.mode === 'edit') {
+            await actions.updateCatch(year, catchModal.dayId, catchModal.catch.id, {
+              participantUid,
+              participantName,
+              species,
+              count,
+            })
+          } else {
+            await actions.addCatch(year, catchModal.dayId, { participantUid, participantName, species, count })
+          }
+          setCatchModal(null)
         }}
       />
 
@@ -575,6 +640,17 @@ function YearReportCard({ year, report, isAdmin, users, actions }) {
   )
 }
 
+// Guests without an app account get a freshly generated id every time
+// they're added as a participant (see buildParticipantMap), so the same
+// guest across years/reports only merges into one row when grouped by name
+// instead of by that id. Registered users keep their stable uid.
+function getParticipantKey(participantUid, participantName) {
+  if (participantUid?.startsWith(EXTERNAL_PARTICIPANT_PREFIX)) {
+    return `name:${(participantName || 'Ukjent').trim().toLowerCase()}`
+  }
+  return participantUid
+}
+
 // Totals across all years, per participant and per hunting area, each broken
 // down by species — the raw numbers behind future statistics.
 function useCatchSummary(reportsByYear) {
@@ -596,13 +672,7 @@ function useCatchSummary(reportsByYear) {
           const count = Number(c.count) || 0
           if (count <= 0) continue
           const name = c.participantName || 'Ukjent'
-          // Guests without an app account get a freshly generated id every
-          // time they're added as a participant (see buildParticipantMap),
-          // so the same guest across years only merges into one row when
-          // grouped by name instead of by that id.
-          const participantKey = c.participantUid?.startsWith(EXTERNAL_PARTICIPANT_PREFIX)
-            ? `name:${name.trim().toLowerCase()}`
-            : c.participantUid
+          const participantKey = getParticipantKey(c.participantUid, name)
           addCount(byParticipant, participantKey, name, c.species, count)
           addCount(byArea, area, area, c.species, count)
         }
@@ -613,6 +683,27 @@ function useCatchSummary(reportsByYear) {
       Array.from(map.values()).sort((a, b) => b.total - a.total || a.label.localeCompare(b.label, 'no'))
 
     return { byParticipant: bySortedTotal(byParticipant), byArea: bySortedTotal(byArea) }
+  }, [reportsByYear])
+}
+
+// How many distinct years each participant shows up in a report's
+// deltakere list — independent of whether they actually got a catch.
+function useParticipationSummary(reportsByYear) {
+  return useMemo(() => {
+    const byParticipant = new Map()
+
+    for (const [year, report] of Object.entries(reportsByYear || {})) {
+      for (const [uid, name] of Object.entries(report.participants || {})) {
+        const key = getParticipantKey(uid, name)
+        const entry = byParticipant.get(key) ?? { key, label: name, years: new Set() }
+        entry.years.add(year)
+        byParticipant.set(key, entry)
+      }
+    }
+
+    return Array.from(byParticipant.values())
+      .map((entry) => ({ key: entry.key, label: entry.label, yearsCount: entry.years.size }))
+      .sort((a, b) => b.yearsCount - a.yearsCount || a.label.localeCompare(b.label, 'no'))
   }, [reportsByYear])
 }
 
@@ -662,10 +753,47 @@ function CatchSummaryTable({ title, rows, emptyLabel }) {
   )
 }
 
+function ParticipationSummaryTable({ rows }) {
+  return (
+    <Paper withBorder radius="md" p="md" style={{ flex: '1 1 260px' }}>
+      <Title order={4} mb="sm">
+        Antall år deltatt
+      </Title>
+      {rows.length === 0 ? (
+        <Text c="dimmed" size="sm">
+          Ingen deltakere registrert enda.
+        </Text>
+      ) : (
+        <Table.ScrollContainer minWidth={220}>
+          <Table verticalSpacing="xs" fz="sm">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th></Table.Th>
+                <Table.Th ta="right">Antall år</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {rows.map((row) => (
+                <Table.Tr key={row.key}>
+                  <Table.Td>{row.label}</Table.Td>
+                  <Table.Td ta="right" fw={600}>
+                    {row.yearsCount}
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
+      )}
+    </Paper>
+  )
+}
+
 function CatchSummary({ reportsByYear }) {
   const { byParticipant, byArea } = useCatchSummary(reportsByYear)
+  const participation = useParticipationSummary(reportsByYear)
 
-  if (byParticipant.length === 0 && byArea.length === 0) return null
+  if (byParticipant.length === 0 && byArea.length === 0 && participation.length === 0) return null
 
   return (
     <Stack gap="sm">
@@ -673,6 +801,7 @@ function CatchSummary({ reportsByYear }) {
       <Group align="flex-start" wrap="wrap" gap="md">
         <CatchSummaryTable title="Pr deltaker" rows={byParticipant} emptyLabel="Ingen fangst registrert enda." />
         <CatchSummaryTable title="Pr jaktområde" rows={byArea} emptyLabel="Ingen fangst registrert enda." />
+        <ParticipationSummaryTable rows={participation} />
       </Group>
     </Stack>
   )
@@ -688,8 +817,10 @@ export function FangstrapporterPage() {
     updateParticipants,
     removeReport,
     addHuntDay,
+    updateHuntDay,
     removeHuntDay,
     addCatch,
+    updateCatch,
     removeCatch,
   } = useCatchReports()
   const { users } = useUsers()
@@ -704,7 +835,16 @@ export function FangstrapporterPage() {
     [reportsByYear],
   )
 
-  const actions = { updateParticipants, removeReport, addHuntDay, removeHuntDay, addCatch, removeCatch }
+  const actions = {
+    updateParticipants,
+    removeReport,
+    addHuntDay,
+    updateHuntDay,
+    removeHuntDay,
+    addCatch,
+    updateCatch,
+    removeCatch,
+  }
 
   return (
     <Stack gap="lg" mt="md">
