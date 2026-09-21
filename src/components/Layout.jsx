@@ -26,6 +26,7 @@ import {
   IconNotebook,
   IconPhoto,
   IconShoppingCart,
+  IconTarget,
   IconUsers,
 } from '@tabler/icons-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -44,6 +45,7 @@ const NAV_ITEMS = [
   { to: '/pakkeliste', label: 'Pakkeliste', icon: IconBackpack },
   { to: '/forberedelser', label: 'Forberedelser', icon: IconChecklist },
   { to: '/jaktbilder', label: 'Jaktbilder', icon: IconPhoto },
+  { to: '/fangstrapporter', label: 'Fangstrapporter', icon: IconTarget },
   { to: '/sanger', label: 'Sanger', icon: IconMusic },
 ]
 
@@ -171,17 +173,19 @@ export function Layout() {
             />
           )}
 
-          <NavLink
-            label="Send tilbakemelding"
-            leftSection={<IconMessage2 size={18} stroke={1.75} />}
-            onClick={() => {
-              setFeedbackOpen(true)
-              close()
-            }}
-            className={classes.navLink}
-            variant="filled"
-            color="forest"
-          />
+          {!isAdmin && (
+            <NavLink
+              label="Send tilbakemelding"
+              leftSection={<IconMessage2 size={18} stroke={1.75} />}
+              onClick={() => {
+                setFeedbackOpen(true)
+                close()
+              }}
+              className={classes.navLink}
+              variant="filled"
+              color="forest"
+            />
+          )}
 
           <NavLink
             label="Skyt rypen"

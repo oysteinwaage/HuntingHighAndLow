@@ -61,3 +61,40 @@ export function formatDateRange(start, end) {
   }
   return `${start.getDate()}. ${monthName(start)} – ${end.getDate()}. ${monthName(end)} ${end.getFullYear()}`
 }
+
+const WEEKDAY_NAMES = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag']
+
+const FULL_MONTH_NAMES = [
+  'januar',
+  'februar',
+  'mars',
+  'april',
+  'mai',
+  'juni',
+  'juli',
+  'august',
+  'september',
+  'oktober',
+  'november',
+  'desember',
+]
+
+// e.g. "torsdag 11. september"
+export function formatFullDate(date) {
+  return `${WEEKDAY_NAMES[date.getDay()]} ${date.getDate()}. ${FULL_MONTH_NAMES[date.getMonth()]}`
+}
+
+export function formatFullDateRange(start, end) {
+  return `${formatFullDate(start)} – ${formatFullDate(end)}`
+}
+
+// All dates from start to end, inclusive.
+export function getDatesInRange(start, end) {
+  const dates = []
+  const current = new Date(start)
+  while (current <= end) {
+    dates.push(new Date(current))
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
+}

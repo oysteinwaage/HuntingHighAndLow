@@ -9,6 +9,7 @@ import { HandlelistePage } from './pages/HandlelistePage'
 import { PakkelistePage } from './pages/PakkelistePage'
 import { ForberedelserPage } from './pages/ForberedelserPage'
 import { JaktbilderPage } from './pages/JaktbilderPage'
+import { FangstrapporterPage } from './pages/FangstrapporterPage'
 import { SangerPage } from './pages/SangerPage'
 import { TilbakemeldingerPage } from './pages/TilbakemeldingerPage'
 
@@ -29,6 +30,7 @@ function App() {
         <Route path="/pakkeliste" element={<PakkelistePage />} />
         <Route path="/forberedelser" element={<ForberedelserPage />} />
         <Route path="/jaktbilder" element={<JaktbilderPage />} />
+        <Route path="/fangstrapporter" element={<FangstrapporterPage />} />
         <Route path="/sanger" element={<SangerPage />} />
         <Route path="/tilbakemeldinger" element={<TilbakemeldingerPage />} />
         <Route path="/admin" element={<AdminPage />} />
