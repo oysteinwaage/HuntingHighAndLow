@@ -1,24 +1,58 @@
-import { useEffect, useState } from 'react'
-import { get, onValue, ref, remove, update } from 'firebase/database'
+import { useEffect, useRef, useState } from 'react'
+import { get, onValue, ref, remove, set, update } from 'firebase/database'
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { compressImage } from '../utils/compressImage'
 
-// One team photo ("lagbilde") per year, keyed by year.
+const CACHE_KEY = 'teamPhotosCache'
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function writeCache(version, photosByYear) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ version, photosByYear }))
+  } catch {
+    // Full/unavailable storage — caching is a pure optimization, safe to skip.
+  }
+}
+
+// One team photo ("lagbilde") per year, keyed by year. The photo list is
+// cached in localStorage and only refetched when `teamPhotosVersion` (a
+// lightweight marker bumped on upload/delete) has changed since last time,
+// so a plain app reload doesn't re-download the whole list from the server.
 export function useTeamPhotos() {
   const { user } = useAuth()
-  const [photosByYear, setPhotosByYear] = useState({})
-  const [loading, setLoading] = useState(true)
+  const cache = useRef(readCache())
+  const [photosByYear, setPhotosByYear] = useState(() => readCache()?.photosByYear || {})
+  const [loading, setLoading] = useState(() => !readCache())
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const photosRef = ref(db, 'teamPhotos')
     return onValue(
-      photosRef,
+      ref(db, 'teamPhotosVersion'),
       (snapshot) => {
-        setPhotosByYear(snapshot.val() || {})
-        setLoading(false)
+        const version = snapshot.val() ?? null
+        if (cache.current && cache.current.version === version) {
+          setLoading(false)
+          return
+        }
+        get(ref(db, 'teamPhotos'))
+          .then((snap) => {
+            const data = snap.val() || {}
+            setPhotosByYear(data)
+            cache.current = { version, photosByYear: data }
+            writeCache(version, data)
+          })
+          .catch(setError)
+          .finally(() => setLoading(false))
       },
       (err) => {
         setError(err)
@@ -26,6 +60,10 @@ export function useTeamPhotos() {
       },
     )
   }, [])
+
+  async function bumpVersion() {
+    await set(ref(db, 'teamPhotosVersion'), Date.now())
+  }
 
   async function uploadPhoto(year, file) {
     const yearRef = ref(db, `teamPhotos/${year}`)
@@ -44,6 +82,7 @@ export function useTeamPhotos() {
       uploadedByUid: user?.uid ?? null,
       uploadedByName: user?.displayName ?? null,
     })
+    await bumpVersion()
   }
 
   async function deletePhoto(year) {
@@ -54,6 +93,7 @@ export function useTeamPhotos() {
       // Filen finnes ikke i Storage — fortsett uansett
     }
     await remove(ref(db, `teamPhotos/${year}`))
+    await bumpVersion()
   }
 
   return { photosByYear, loading, error, uploadPhoto, deletePhoto }
