@@ -385,13 +385,17 @@ function HuntDayCard({ day, isAdmin, onAddCatch, onEditDay, onRemoveDay, onEditC
   )
 }
 
-function EditParticipantsModal({ opened, onClose, year, report, users, onSave }) {
+function EditReportModal({ opened, onClose, year, report, users, onSave }) {
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [participantNames, setParticipantNames] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     if (opened) {
+      setStartDate(report.startDate)
+      setEndDate(report.endDate)
       setParticipantNames(Object.values(report.participants || {}))
       setError(null)
     }
@@ -404,6 +408,14 @@ function EditParticipantsModal({ opened, onClose, year, report, users, onSave })
   }
 
   async function handleSubmit() {
+    if (!startDate || !endDate) {
+      setError('Fangstrapporten må ha en fra- og til-dato.')
+      return
+    }
+    if (endDate < startDate) {
+      setError('Til-dato kan ikke være før fra-dato.')
+      return
+    }
     if (participantNames.length === 0) {
       setError('Fangstrapporten må ha minst én deltaker.')
       return
@@ -412,18 +424,32 @@ function EditParticipantsModal({ opened, onClose, year, report, users, onSave })
     setError(null)
     try {
       const participantMap = buildParticipantMap(participantNames, users)
-      await onSave(participantMap)
+      await onSave({ startDate, endDate, participants: participantMap })
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kunne ikke lagre deltakerne.')
+      setError(err instanceof Error ? err.message : 'Kunne ikke lagre fangstrapporten.')
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal opened={opened} onClose={handleClose} title={`Rediger deltakere ${year}`} centered size="sm">
+    <Modal opened={opened} onClose={handleClose} title={`Rediger fangstrapport ${year}`} centered size="sm">
       <Stack gap="sm">
+        <Group grow>
+          <TextInput
+            type="date"
+            label="Fra dato"
+            value={startDate}
+            onChange={(event) => setStartDate(event.currentTarget.value)}
+          />
+          <TextInput
+            type="date"
+            label="Til dato"
+            value={endDate}
+            onChange={(event) => setEndDate(event.currentTarget.value)}
+          />
+        </Group>
         <TagsInput
           label="Deltakere"
           description="Velg blant registrerte brukere, eller skriv inn navnet på noen uten bruker i appen og trykk Enter. Fjern noen ved å klikke bort chip'en deres."
@@ -460,7 +486,7 @@ function YearReportCard({ year, report, isAdmin, users, actions }) {
   const [dayModal, setDayModal] = useState(null)
   // catchModal: null | { dayId, mode: 'add' } | { dayId, mode: 'edit', catch }
   const [catchModal, setCatchModal] = useState(null)
-  const [editParticipantsOpen, setEditParticipantsOpen] = useState(false)
+  const [editReportOpen, setEditReportOpen] = useState(false)
   const [confirmDeleteReport, setConfirmDeleteReport] = useState(false)
 
   const huntDays = Object.entries(report.huntDays || {})
@@ -482,8 +508,8 @@ function YearReportCard({ year, report, isAdmin, users, actions }) {
               <ActionIcon
                 variant="subtle"
                 color="forest"
-                onClick={() => setEditParticipantsOpen(true)}
-                aria-label={`Rediger deltakere for ${year}`}
+                onClick={() => setEditReportOpen(true)}
+                aria-label={`Rediger fangstrapport for ${year}`}
               >
                 <IconPencil size={18} />
               </ActionIcon>
@@ -599,13 +625,13 @@ function YearReportCard({ year, report, isAdmin, users, actions }) {
         }}
       />
 
-      <EditParticipantsModal
-        opened={editParticipantsOpen}
-        onClose={() => setEditParticipantsOpen(false)}
+      <EditReportModal
+        opened={editReportOpen}
+        onClose={() => setEditReportOpen(false)}
         year={year}
         report={report}
         users={users}
-        onSave={(participantMap) => actions.updateParticipants(year, participantMap)}
+        onSave={(values) => actions.updateReport(year, values)}
       />
 
       <Modal
@@ -814,7 +840,7 @@ export function FangstrapporterPage() {
     loading,
     error,
     addReport,
-    updateParticipants,
+    updateReport,
     removeReport,
     addHuntDay,
     updateHuntDay,
@@ -836,7 +862,7 @@ export function FangstrapporterPage() {
   )
 
   const actions = {
-    updateParticipants,
+    updateReport,
     removeReport,
     addHuntDay,
     updateHuntDay,

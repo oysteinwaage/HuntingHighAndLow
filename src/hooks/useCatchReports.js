@@ -40,8 +40,8 @@ export function useCatchReports() {
     })
   }
 
-  async function updateParticipants(year, participants) {
-    await update(ref(db, `catchReports/${year}`), { participants, updatedAt: Date.now() })
+  async function updateReport(year, { startDate, endDate, participants }) {
+    await update(ref(db, `catchReports/${year}`), { startDate, endDate, participants, updatedAt: Date.now() })
   }
 
   async function removeReport(year) {
@@ -84,7 +84,7 @@ export function useCatchReports() {
     loading,
     error,
     addReport,
-    updateParticipants,
+    updateReport,
     removeReport,
     addHuntDay,
     updateHuntDay,
