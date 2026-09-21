@@ -1,6 +1,6 @@
 import { SEASON_OPEN_DAY, SEASON_OPEN_MONTH } from './huntDates'
 
-export const MIN_CATCH_REPORT_YEAR = 2002
+export const MIN_CATCH_REPORT_YEAR = 2003
 
 // The current year only becomes selectable once the season has opened
 // (10. september) — before that, the max selectable year is last year.
