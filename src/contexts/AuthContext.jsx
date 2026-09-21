@@ -15,6 +15,10 @@ export function AuthProvider({ children }) {
   const [roles, setRoles] = useState([])
   const [onboardingCompleted, setOnboardingCompleted] = useState(null)
   const [isNewUser, setIsNewUser] = useState(false)
+  // Becomes true once the upsert transaction below has fully settled (incl. any
+  // server-side retries). We wait for this before reading onboardingCompleted so
+  // that listener doesn't see the transaction's speculative local guess first.
+  const [profileReady, setProfileReady] = useState(false)
 
   useEffect(() => {
     return onAuthStateChanged(auth, (firebaseUser) => {
@@ -35,14 +39,14 @@ export function AuthProvider({ children }) {
 
   // null = not yet known, false = needs onboarding, true = done.
   useEffect(() => {
-    if (!user) {
+    if (!user || !profileReady) {
       setOnboardingCompleted(null)
       return
     }
     return onValue(ref(db, `users/${user.uid}/onboardingCompleted`), (snapshot) => {
       setOnboardingCompleted(!!snapshot.val())
     })
-  }, [user])
+  }, [user, profileReady])
 
   // Upserts the user record and stamps `lastLogin` on every resolved session
   // (fresh sign-in and persisted session restore alike), so the admin user
@@ -51,7 +55,10 @@ export function AuthProvider({ children }) {
   // new user can't have their record created (without roles) by a
   // concurrent write racing ahead of the "does this user exist" check.
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setProfileReady(false)
+      return
+    }
     const { uid, displayName, email, photoURL } = user
     const now = Date.now()
     let wasNew = false
@@ -63,6 +70,8 @@ export function AuthProvider({ children }) {
       return { ...current, displayName, email, photoURL, lastLogin: now }
     }).then(() => {
       if (wasNew) setIsNewUser(true)
+    }).finally(() => {
+      setProfileReady(true)
     })
   }, [user])
 
